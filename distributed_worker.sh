@@ -1,6 +1,6 @@
 pip3 install pillow==6.1
     
-export NVIDIA_VISIBLE_DEVICES=0  
+export NVIDIA_VISIBLE_DEVICES=0,1,2,3  
 export DMLC_WORKER_ID=0 
 export DMLC_NUM_WORKER=2 
 export DMLC_ROLE=worker 
