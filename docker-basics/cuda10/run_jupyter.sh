@@ -6,9 +6,6 @@ echo "Detected $NCPUS cpus"
 
 echo $PATH
 
-
-#dask-scheduler --host localhost &
-#dask-worker localhost:8786 $* &
 jupyter notebook --allow-root  "$@" &
 
 /usr/sbin/sshd -D & 
