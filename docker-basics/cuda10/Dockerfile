@@ -149,16 +149,65 @@ RUN wget https://download.pytorch.org/libtorch/cu100/libtorch-cxx11-abi-shared-w
 RUN unzip /root/libtorch-cxx11-abi-shared-with-deps-1.2.0.zip
 #RUN mv /root/libtorch /root/libtorch_gpu 
 #RUN rm libtorch-shared-with-deps-latest.zip
-RUN pip install tornado==5.1.1
+
+RUN conda install faiss-gpu -c pytorch
+#RUN pip install tornado==5.0.0
+
 
 RUN ldconfig
 
 RUN pip install tensorboardX tensorflow-gpu==1.13.1 keras tqdm sklearn pandas scipy flask --disable-pip-version-check
-RUN pip install pycrayon ww tensorboard_logger imgaug sacred==0.7.4 pymongo
+#RUN pip install pycrayon ww tensorboard_logger imgaug sacred==0.7.4 pymongo
 
-RUN apt-get install -y software-properties-common
-RUN pip install sacredboard visdom-observer pytorch-utils git+https://github.com/rtqichen/torchdiffeq pytorchcv
+#RUN apt-get install -y software-properties-common
+#RUN pip install sacredboard visdom-observer pytorch-utils git+https://github.com/rtqichen/torchdiffeq pytorchcv
 
 EXPOSE 6006 3838 8787 8888 8786 9786 8788 5432 8000 7800 9999 7842 22 3122 7847 7848 8097 27017
 
 RUN conda install xeus-cling -c QuantStack -c conda-forge
+
+#RUN apt-get -y install ruby-full
+#RUN gem install cnvrg
+
+RUN conda install faiss-gpu -c pytorch
+
+RUN pip install tornado==5.0.0 rii nmslib annoy falconn pqkmeans nanopq
+
+RUN git clone https://github.com/pdollar/coco.git && cd coco/PythonAPI && make install && pip3 install -e .
+RUN pip install --upgrade gensim nltk numpy torch torchvision tqdm Pillow scikit-image
+RUN python3 -m nltk.downloader stopwords
+
+
+RUN apt-get -y install libopenmpi-dev
+RUN apt-get -y install openmpi-bin
+RUN apt-get -y install libblacs-mpi-dev
+RUN pip install horovod
+RUN conda install -c anaconda nccl
+#HOROVOD_NCCL_HOME=<ncclのdirectory> HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_WITHOUT_TENSORFLOW=1 HOROVOD_WITHOUT_MXNET=1 pip install horovod
+
+# Spark dependencies
+ENV APACHE_SPARK_VERSION=2.4.5 \
+    HADOOP_VERSION=2.7
+
+RUN apt-get -y update && \
+    apt-get install --no-install-recommends -y openjdk-8-jre-headless ca-certificates-java && \
+    rm -rf /var/lib/apt/lists/*
+
+# Using the preferred mirror to download the file
+RUN cd /tmp && \
+    wget -q $(wget -qO- https://www.apache.org/dyn/closer.lua/spark/spark-${APACHE_SPARK_VERSION}/spark-${APACHE_SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz\?as_json | \
+    python -c "import sys, json; content=json.load(sys.stdin); print(content['preferred']+content['path_info'])") && \
+    echo "2426a20c548bdfc07df288cd1d18d1da6b3189d0b78dee76fa034c52a4e02895f0ad460720c526f163ba63a17efae4764c46a1cd8f9b04c60f9937a554db85d2 *spark-${APACHE_SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz" | sha512sum -c - && \
+    tar xzf spark-${APACHE_SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz -C /usr/local --owner root --group root --no-same-owner && \
+    rm spark-${APACHE_SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz
+RUN cd /usr/local && ln -s spark-${APACHE_SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} spark
+
+# Spark and Mesos config
+ENV SPARK_HOME=/usr/local/spark
+ENV PYTHONPATH=$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-0.10.7-src.zip \
+    MESOS_NATIVE_LIBRARY=/usr/local/lib/libmesos.so \
+    SPARK_OPTS="--driver-java-options=-Xms1024M --driver-java-options=-Xmx4096M --driver-java-options=-Dlog4j.logLevel=info" \
+    PATH=$PATH:$SPARK_HOME/bin
+
+# Install pyarrow
+RUN conda install --quiet -y 'pyarrow'
